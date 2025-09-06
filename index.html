@@ -14,7 +14,8 @@
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc, addDoc, collection, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Your web app's Firebase configuration
+        // Firebase configuration and custom auth token for admin panel.
+        // The user ID 'QJSd0hyYcNZptGEnfpxaqqkESNH2' should be used for admin access.
         const firebaseConfig = {
             apiKey: "AIzaSyCoKBX6p2zsmWq47NXQvgArVXjB4Xu_63g",
             authDomain: "hridoy-8d6c1.firebaseapp.com",
@@ -40,7 +41,7 @@
         let unsubscribeUser = null;
         let unsubscribeSettings = null;
 
-        // Sign in with custom token
+        // Sign in with custom token for admin or anonymously for regular users
         if (customAuthToken) {
             signInWithCustomToken(auth, customAuthToken).then(() => {
                 console.log("Signed in with custom token.");
@@ -197,6 +198,7 @@
     <script src="https://ad.gigapub.tech/script?id=919"></script>
 
     <style>
+        /* CSS for a clean, dark-themed UI */
         body {
             background-color: #0d1117;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -348,28 +350,28 @@
 
         <div id="home-section" class="content-section active">
             <div class="balance-card">
-                <h2>Your Current Earning</h2>
+                <h2>আপনার বর্তমান আয়</h2>
                 <div class="amount" id="currentBalance">$0.00</div>
-                <div class="ad-earning">Earning per ad: $ <span id="adEarningRateDisplay">0.15</span></div>
-                <button class="withdraw-button" onclick="handleWithdrawClick()">Withdraw</button>
+                <div class="ad-earning">প্রতি বিজ্ঞাপনে আয়: $ <span id="adEarningRateDisplay">0.15</span></div>
+                <button class="withdraw-button" onclick="handleWithdrawClick()">উত্তোলন</button>
             </div>
             
             <div class="options-grid">
                 <div class="option-card">
-                    <h3>MoniTag Earning</h3>
-                    <button id="moniTagButton">Open</button>
+                    <h3>MoniTag আয়</h3>
+                    <button id="moniTagButton">খুলুন</button>
                 </div>
                 <div class="option-card">
-                    <h3>Gigapub Earning</h3>
-                    <button id="gigapubButton">Open</button>
+                    <h3>Gigapub আয়</h3>
+                    <button id="gigapubButton">খুলুন</button>
                 </div>
                 <div class="option-card">
-                    <h3>Web Visit Earning</h3>
-                    <button onclick="handleEarningClick('Web Visit')">Open</button>
+                    <h3>ওয়েব ভিজিট আয়</h3>
+                    <button onclick="handleEarningClick('Web Visit')">খুলুন</button>
                 </div>
                 <div class="option-card">
-                    <h3>Telegram Earning</h3>
-                    <button onclick="handleEarningClick('Telegram')">Open</button>
+                    <h3>টেলিগ্রাম আয়</h3>
+                    <button onclick="handleEarningClick('Telegram')">খুলুন</button>
                 </div>
             </div>
             <div id="ad-status-message"></div>
