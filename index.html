@@ -3,19 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swap4Cash.online</title>
+    <title>Swap4Cash - User Panel</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome for modern icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .container {
+            max-width: 90%;
+        }
+        .form-input {
+            @apply w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300;
+        }
+        .form-label {
+            @apply block text-sm font-medium text-gray-400 mb-1;
+        }
+        .btn-primary {
+            @apply w-full py-3 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors duration-300;
+        }
+        .btn-secondary {
+            @apply w-full py-3 rounded-lg font-semibold text-white border border-gray-600 hover:bg-gray-700 transition-colors duration-300;
+        }
+        .card {
+            @apply bg-gray-800 p-8 rounded-xl shadow-lg transform transition-all duration-500;
+        }
+        .logo-text {
+            font-family: 'Poppins', sans-serif;
+            @apply text-3xl font-bold text-green-500;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #2d3748;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center">
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, addDoc, collection, increment, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase configuration and custom auth token for admin panel.
-        // The user ID 'QJSd0hyYcNZptGEnfpxaqqkESNH2' should be used for admin access.
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCoKBX6p2zsmWq47NXQvgArVXjB4Xu_63g",
             authDomain: "hridoy-8d6c1.firebaseapp.com",
@@ -26,494 +78,306 @@
             appId: "1:953393602911:web:6685a090899597a9d916ea",
             measurementId: "G-KP6J8E6W80"
         };
-        const customAuthToken = "QJSd0hyYcNZptGEnfpxaqqkESNH2";
-
+        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         
-        // Global variables for dynamic settings
-        let moniTagZoneId = '';
-        let gigapubZoneId = '';
-        let withdrawalMethods = [];
+        // Custom Modal Functions
+        function showModal(message) {
+            const modal = document.getElementById('modal');
+            const messageElement = document.getElementById('modal-message');
+            messageElement.textContent = message;
+            modal.style.display = 'flex';
+        }
+        
+        function hideModal() {
+            const modal = document.getElementById('modal');
+            modal.style.display = 'none';
+        }
+        window.hideModal = hideModal;
 
-        let userId = null;
-        let unsubscribeUser = null;
-        let unsubscribeSettings = null;
+        // Auth State Listener
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                console.log("User logged in:", user.uid);
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('user-dashboard').classList.remove('hidden');
+                loadUserData(user.uid);
+            } else {
+                console.log("User logged out.");
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('user-dashboard').classList.add('hidden');
+            }
+        });
 
-        // Sign in with custom token for admin or anonymously for regular users
-        if (customAuthToken) {
-            signInWithCustomToken(auth, customAuthToken).then(() => {
-                console.log("Signed in with custom token.");
-            }).catch((error) => {
-                console.error("Error signing in with custom token:", error);
-                signInAnonymously(auth).then(() => {
-                    console.log("Signed in anonymously as a fallback.");
-                }).catch((err) => console.error("Anonymous sign-in failed:", err));
+        async function loadUserData(userId) {
+            const userDocRef = doc(db, "users", userId);
+            
+            // Listen for real-time updates to user data
+            onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    document.getElementById('user-name-display').textContent = userData.fullName || 'User';
+                    document.getElementById('user-balance-display').textContent = userData.balance ? `$${userData.balance.toFixed(2)}` : '$0.00';
+                    document.getElementById('user-ads-watched').textContent = userData.adsWatched || 0;
+                    document.getElementById('account-status').textContent = `Status: ${userData.status || 'active'}`;
+                    document.getElementById('withdrawal-amount-input').value = userData.balance || 0;
+                } else {
+                    console.log("User document does not exist, creating it.");
+                    setDoc(userDocRef, {
+                        fullName: auth.currentUser.displayName || 'New User',
+                        email: auth.currentUser.email,
+                        balance: 0,
+                        adsWatched: 0,
+                        status: 'active',
+                        registeredAt: new Date()
+                    }).then(() => console.log("User document created."));
+                }
+            }, (error) => {
+                console.error("Error fetching user data:", error);
+                showModal("Error loading user data.");
             });
-        } else {
-            signInAnonymously(auth).then(() => {
-                console.log("No token provided, signed in anonymously.");
-            }).catch((err) => console.error("Anonymous sign-in failed:", err));
+
+             // Load withdrawal methods from settings
+            onSnapshot(doc(db, "settings", "app_settings"), (docSnap) => {
+                if (docSnap.exists()) {
+                    const settings = docSnap.data();
+                    const withdrawalMethodsSelect = document.getElementById('withdrawal-methods-select');
+                    withdrawalMethodsSelect.innerHTML = ''; // Clear existing options
+                    if (settings.withdrawalMethods && Array.isArray(settings.withdrawalMethods)) {
+                        settings.withdrawalMethods.forEach(method => {
+                            const option = document.createElement('option');
+                            option.value = method.value;
+                            option.textContent = method.label;
+                            withdrawalMethodsSelect.appendChild(option);
+                        });
+                    }
+                }
+            });
         }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-                document.getElementById('profile-id').innerText = userId;
-                console.log("User ID:", userId);
-                
-                const userDocRef = doc(db, "users", userId);
-                getDoc(userDocRef).then((docSnap) => {
-                    if (!docSnap.exists()) {
-                        setDoc(userDocRef, {
-                            balance: 0.00,
-                            adsWatched: 0,
-                            tasksCompleted: 0,
-                            status: 'active'
-                        }).then(() => console.log("New user document created!"));
-                    }
-                });
-
-                // Set up real-time listener for user data and status
-                unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-                    if (doc.exists()) {
-                        const data = doc.data();
-                        window.currentBalance = data.balance;
-                        window.adsWatchedCount = data.adsWatched;
-                        updateBalanceDisplay();
-
-                        if (data.status === 'blocked') {
-                            document.getElementById('blocked-message').style.display = 'block';
-                            document.getElementById('home-section').style.display = 'none';
-                            document.getElementById('wallet-section').style.display = 'none';
-                        } else {
-                            document.getElementById('blocked-message').style.display = 'none';
-                            document.getElementById('home-section').style.display = 'block';
-                        }
-                    } else {
-                        console.log("User document does not exist.");
-                    }
-                });
-
-            } else {
-                console.log("User is not signed in.");
-                userId = null;
-                window.currentBalance = 0;
-                window.adsWatchedCount = 0;
-                updateBalanceDisplay();
-                if (unsubscribeUser) unsubscribeUser();
-            }
-        });
-
-        // Set up real-time listener for app settings
-        const settingsDocRef = doc(db, "settings", "app_settings");
-        unsubscribeSettings = onSnapshot(settingsDocRef, (doc) => {
-            if (doc.exists()) {
-                const data = doc.data();
-                moniTagZoneId = data.moniTagZoneId;
-                gigapubZoneId = data.gigapubZoneId;
-                withdrawalMethods = data.withdrawalMethods || [];
-                
-                // Update withdrawal form options
-                const methodSelect = document.getElementById('method');
-                methodSelect.innerHTML = '<option value="">Select a method</option>';
-                withdrawalMethods.forEach(method => {
-                    const option = document.createElement('option');
-                    option.value = method.value;
-                    option.innerText = method.label;
-                    methodSelect.appendChild(option);
-                });
-            } else {
-                console.log("Settings document does not exist. Please create one from the admin panel.");
-            }
-        });
-
-        window.addEarnings = async function(source) {
-            if (!userId) {
-                console.error("User not signed in. Cannot add earnings.");
-                return;
-            }
-            
-            const userDocRef = doc(db, "users", userId);
-            const adEarningRate = 0.15;
+        // Handle Registration
+        window.handleRegister = async function() {
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const fullName = document.getElementById('reg-fullname').value;
+            const errorMessage = document.getElementById('reg-error-message');
             
             try {
-                await updateDoc(userDocRef, {
-                    balance: increment(adEarningRate),
-                    adsWatched: increment(1)
-                });
-                const messageEl = document.getElementById('ad-status-message');
-                messageEl.innerText = `Successfully earned $${adEarningRate.toFixed(2)}!`;
-                messageEl.style.display = 'block';
-                console.log(`Earned $${adEarningRate}.`);
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(userCredential.user, { displayName: fullName });
+                showModal("Registration successful! You are now logged in.");
             } catch (error) {
-                console.error("Error updating balance:", error);
+                errorMessage.textContent = error.message;
+                console.error("Registration failed:", error);
+            }
+        }
+        
+        // Handle Login
+        window.handleLogin = async function() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorMessage = document.getElementById('login-error-message');
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showModal("Login successful!");
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                console.error("Login failed:", error);
             }
         }
 
-        window.submitWithdrawal = async function() {
-            if (!userId) {
-                console.error("User not signed in. Cannot submit withdrawal.");
+        // Handle Logout
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                showModal("You have been logged out successfully.");
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        }
+
+        // Form switching
+        window.showLoginForm = function() {
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        }
+
+        window.showRegisterForm = function() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+        }
+
+        // Withdrawal Request
+        window.submitWithdrawalRequest = async function() {
+            const amount = parseFloat(document.getElementById('withdrawal-amount-input').value);
+            const method = document.getElementById('withdrawal-methods-select').value;
+            const account = document.getElementById('withdrawal-account-input').value;
+
+            if (!amount || amount <= 0 || !method || !account) {
+                showModal("Please fill in all withdrawal details.");
                 return;
             }
 
-            const amount = document.getElementById('amount').value;
-            const method = document.getElementById('method').value;
-            const account = document.getElementById('account').value;
+            const userDocRef = doc(db, "users", auth.currentUser.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            const userData = userDocSnap.data();
 
-            if (amount && method && account) {
-                if (parseFloat(amount) > window.currentBalance) {
-                    alert('Insufficient balance. Please enter a lower amount.');
-                    return;
-                }
+            if (amount > userData.balance) {
+                showModal("Insufficient balance for this withdrawal.");
+                return;
+            }
+            if (userData.status === 'blocked') {
+                showModal("Your account is blocked. Please contact support.");
+                return;
+            }
+
+            try {
+                // Submit request to withdrawal_requests collection
+                await setDoc(doc(db, "withdrawal_requests", crypto.randomUUID()), {
+                    userId: auth.currentUser.uid,
+                    amount: amount,
+                    method: method,
+                    account: account,
+                    status: 'pending',
+                    timestamp: new Date()
+                });
+
+                // Deduct balance from user document
+                await updateDoc(userDocRef, {
+                    balance: userData.balance - amount
+                });
                 
-                try {
-                    await addDoc(collection(db, "withdrawal_requests"), {
-                        userId: userId,
-                        amount: parseFloat(amount),
-                        method: method,
-                        account: account,
-                        status: 'pending',
-                        createdAt: new Date()
-                    });
-                    
-                    const userDocRef = doc(db, "users", userId);
-                    await updateDoc(userDocRef, {
-                        balance: increment(-parseFloat(amount))
-                    });
+                showModal("Withdrawal request submitted successfully!");
 
-                    alert(`Withdrawal of $${amount} to ${method} account ${account} submitted successfully!`);
-                    document.getElementById('amount').value = '';
-                } catch (error) {
-                    console.error("Error submitting withdrawal:", error);
-                    alert("Error submitting withdrawal request. Please try again.");
-                }
-            } else {
-                alert('Please fill out all the fields.');
+            } catch (error) {
+                console.error("Error submitting withdrawal request:", error);
+                showModal("Error submitting request. Please try again.");
             }
         }
     </script>
-    <script src='//libtl.com/sdk.js'></script>
-    <script src="https://ad.gigapub.tech/script?id=919"></script>
 
-    <style>
-        /* CSS for a clean, dark-themed UI */
-        body {
-            background-color: #0d1117;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #e0e0e0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background-color: #1a202c;
-            border-bottom: 1px solid #2d3748;
-        }
-        .header .logo {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #4CAF50;
-        }
-        .main-content {
-            flex: 1;
-            padding: 20px;
-        }
-        .balance-card, .option-card, .profit-details, .withdraw-form {
-            background-color: #1f2735;
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin-bottom: 25px;
-        }
-        .balance-card h2 {
-            font-size: 1.1em;
-            margin-top: 0;
-            color: #909090;
-        }
-        .balance-card .amount {
-            font-size: 3.5em;
-            font-weight: bold;
-            color: #28a745;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        .withdraw-button {
-            background-color: #e65100;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: bold;
-            margin-top: 20px;
-            transition: background-color 0.3s ease;
-        }
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .option-card button {
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-            margin-top: 20px;
-            transition: background-color 0.3s ease;
-        }
-        .bottom-nav {
-            display: flex;
-            justify-content: space-around;
-            background-color: #1a202c;
-            padding: 10px 0;
-            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
-            border-top: 1px solid #2d3748;
-        }
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            color: #707070;
-            font-size: 0.8em;
-            transition: color 0.3s ease;
-            cursor: pointer;
-        }
-        .nav-item.active {
-            color: #2196F3;
-        }
-        .nav-item i {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        .content-section {
-            display: none;
-        }
-        .content-section.active {
-            display: block;
-        }
-        #blocked-message {
-            display: none;
-            text-align: center;
-            padding: 20px;
-            color: red;
-            background-color: #2d3748;
-            border-radius: 15px;
-            margin-top: 50px;
-        }
-        .withdraw-form input, .withdraw-form select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-            border: 1px solid #2d3748;
-            background-color: #1a202c;
-            color: #e0e0e0;
-        }
-        .withdraw-form button {
-            width: 100%;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 5px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <span class="logo">swap4cash.online</span>
-    </div>
+    <!-- Authentication Section -->
+    <div id="auth-section" class="w-full flex flex-col items-center p-4">
+        <h1 class="logo-text text-green-500 mb-8">Swap4Cash</h1>
 
-    <div class="main-content">
-        <div id="blocked-message">
-            <h1>Your account has been blocked by the admin.</h1>
-            <p>For more details, please contact support.</p>
-        </div>
-
-        <div id="home-section" class="content-section active">
-            <div class="balance-card">
-                <h2>আপনার বর্তমান আয়</h2>
-                <div class="amount" id="currentBalance">$0.00</div>
-                <div class="ad-earning">প্রতি বিজ্ঞাপনে আয়: $ <span id="adEarningRateDisplay">0.15</span></div>
-                <button class="withdraw-button" onclick="handleWithdrawClick()">উত্তোলন</button>
-            </div>
-            
-            <div class="options-grid">
-                <div class="option-card">
-                    <h3>MoniTag আয়</h3>
-                    <button id="moniTagButton">খুলুন</button>
+        <div id="login-form" class="card w-full max-w-sm">
+            <h2 class="text-2xl font-bold mb-6 text-center text-white">Login to Your Account</h2>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label for="login-email" class="form-label">Email Address</label>
+                    <input type="email" id="login-email" placeholder="you@example.com" class="form-input" required>
                 </div>
-                <div class="option-card">
-                    <h3>Gigapub আয়</h3>
-                    <button id="gigapubButton">খুলুন</button>
+                <div>
+                    <label for="login-password" class="form-label">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" class="form-input" required>
                 </div>
-                <div class="option-card">
-                    <h3>ওয়েব ভিজিট আয়</h3>
-                    <button onclick="handleEarningClick('Web Visit')">খুলুন</button>
-                </div>
-                <div class="option-card">
-                    <h3>টেলিগ্রাম আয়</h3>
-                    <button onclick="handleEarningClick('Telegram')">খুলুন</button>
-                </div>
-            </div>
-            <div id="ad-status-message"></div>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+            <div id="login-error-message" class="text-red-400 text-center mt-4"></div>
+            <p class="text-sm text-gray-400 text-center mt-6">
+                Don't have an account? <a href="#" onclick="showRegisterForm()" class="text-green-500 hover:underline">Register</a>
+            </p>
         </div>
 
-        <div id="wallet-section" class="content-section">
-            <h2>Wallet</h2>
-            <div class="withdraw-form" id="withdraw-form">
-                <h3>Withdrawal Request</h3>
-                <label for="amount">Amount ($):</label>
-                <input type="number" id="amount" name="amount" placeholder="Enter amount to withdraw" required>
-                <label for="method">Payment Method:</label>
-                <select id="method" name="method" required>
-                    <option value="">Select a method</option>
-                </select>
-                <label for="account">Account Number:</label>
-                <input type="text" id="account" name="account" placeholder="Enter your account number" required>
-                <button onclick="submitWithdrawal()">Submit Request</button>
-            </div>
-        </div>
-
-        <div id="ads-section" class="content-section">
-            <h2>Ads Section</h2>
-            <p>Watch ads to earn money.</p>
-        </div>
-
-        <div id="profile-section" class="content-section">
-             <div class="profit-details">
-                <h2>Profit Details</h2>
-                <p><strong>Username:</strong> HACKER</p>
-                <p><strong>User ID:</strong> <span id="profile-id">Loading...</span></p>
-                <p><strong>Total Ads Watched:</strong> <span id="adsWatchedCountProfile">0</span></p>
-                <p><strong>Total Tasks Completed:</strong> 15</p>
-                <p><strong>Total Withdrawals:</strong> $0.00</p>
-            </div>
-        </div>
-        
-        <div id="settings-section" class="content-section">
-            <h2>Settings Section</h2>
-            <p>You can manage your settings here.</p>
+        <div id="register-form" class="card w-full max-w-sm hidden">
+            <h2 class="text-2xl font-bold mb-6 text-center text-white">Create a New Account</h2>
+            <form onsubmit="event.preventDefault(); handleRegister();" class="space-y-4">
+                <div>
+                    <label for="reg-fullname" class="form-label">Full Name</label>
+                    <input type="text" id="reg-fullname" placeholder="Your Full Name" class="form-input" required>
+                </div>
+                <div>
+                    <label for="reg-email" class="form-label">Email Address</label>
+                    <input type="email" id="reg-email" placeholder="you@example.com" class="form-input" required>
+                </div>
+                <div>
+                    <label for="reg-password" class="form-label">Password</label>
+                    <input type="password" id="reg-password" placeholder="••••••••" class="form-input" required>
+                </div>
+                <button type="submit" class="btn-primary">Register</button>
+            </form>
+            <div id="reg-error-message" class="text-red-400 text-center mt-4"></div>
+            <p class="text-sm text-gray-400 text-center mt-6">
+                Already have an account? <a href="#" onclick="showLoginForm()" class="text-green-500 hover:underline">Login</a>
+            </p>
         </div>
     </div>
 
-    <div class="bottom-nav">
-        <a class="nav-item active" data-page="home">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a class="nav-item" data-page="wallet">
-            <i class="fas fa-wallet"></i>
-            <span>Wallet</span>
-        </a>
-        <a class="nav-item" data-page="ads">
-            <i class="fas fa-bullhorn"></i>
-            <span>Ads</span>
-        </a>
-        <a class="nav-item" data-page="profile">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-        </a>
-        <a class="nav-item" data-page="settings">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-        </a>
+    <!-- User Dashboard Section -->
+    <div id="user-dashboard" class="hidden w-full p-4">
+        <header class="bg-gray-800 p-6 flex justify-between items-center rounded-xl shadow-lg mb-8">
+            <div class="flex items-center space-x-4">
+                <i class="fas fa-user-circle text-4xl text-green-500"></i>
+                <div>
+                    <h1 class="text-xl font-bold" id="user-name-display"></h1>
+                    <p class="text-sm text-gray-400" id="account-status"></p>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+            </button>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Balance Card -->
+            <div class="card bg-gray-800 col-span-1 lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold">Your Balance</h2>
+                    <i class="fas fa-dollar-sign text-3xl text-yellow-400"></i>
+                </div>
+                <p class="text-5xl font-extrabold text-green-500" id="user-balance-display">$0.00</p>
+                <div class="mt-4 text-sm text-gray-400">
+                    <p>Total ads watched: <span class="text-white font-semibold" id="user-ads-watched">0</span></p>
+                </div>
+            </div>
+
+            <!-- Withdraw Card -->
+            <div class="card bg-gray-800 col-span-1">
+                <h2 class="text-2xl font-bold mb-4">Withdraw</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="withdrawal-amount-input" class="form-label">Amount</label>
+                        <input type="number" id="withdrawal-amount-input" class="form-input" min="1" step="0.01">
+                    </div>
+                    <div>
+                        <label for="withdrawal-methods-select" class="form-label">Method</label>
+                        <select id="withdrawal-methods-select" class="form-input">
+                            <!-- Options populated by Firebase -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="withdrawal-account-input" class="form-label">Account No.</label>
+                        <input type="text" id="withdrawal-account-input" class="form-input" placeholder="e.g., 017xxxxxxxx">
+                    </div>
+                    <button onclick="submitWithdrawalRequest()" class="btn-primary">Submit Request</button>
+                </div>
+            </div>
+
+            <!-- Ad Viewing Section -->
+            <div class="card bg-gray-800 col-span-1 md:col-span-2 lg:col-span-3">
+                <h2 class="text-2xl font-bold mb-4">Watch Ads to Earn</h2>
+                <div class="text-center">
+                    <p class="text-sm text-gray-400 mb-4">Click the button below to watch an ad and earn credit.</p>
+                    <button id="watch-ad-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition-colors duration-300">
+                        <i class="fas fa-play-circle mr-2"></i>Watch Ad
+                    </button>
+                    <!-- Ad display will be here, using a library like MoniTag -->
+                </div>
+            </div>
+        </main>
     </div>
 
-    <script>
-        window.currentBalance = 0;
-        window.adsWatchedCount = 0;
-        const adEarningRate = 0.15;
-        
-        function updateBalanceDisplay() {
-            document.getElementById('currentBalance').innerText = '$' + window.currentBalance.toFixed(2);
-            document.getElementById('adsWatchedCountProfile').innerText = window.adsWatchedCount;
-        }
+    <!-- Modal for notifications -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content card">
+            <h2 class="text-xl font-bold mb-4">Notification</h2>
+            <p id="modal-message" class="mb-6"></p>
+            <button onclick="hideModal()" class="btn-primary">OK</button>
+        </div>
+    </div>
 
-        document.getElementById('moniTagButton').addEventListener('click', function() {
-            const messageEl = document.getElementById('ad-status-message');
-            messageEl.innerText = 'Ad loading... Please wait.';
-            messageEl.style.display = 'block';
-
-            if (typeof show_9572158 === 'function') {
-                show_9572158();
-                setTimeout(function() {
-                    window.addEarnings('MoniTag');
-                }, 3000);
-            } else {
-                messageEl.innerText = 'MoniTag ad failed to load. Please check your internet connection.';
-            }
-        });
-
-        document.getElementById('gigapubButton').addEventListener('click', function() {
-            const messageEl = document.getElementById('ad-status-message');
-            messageEl.innerText = 'Ad loading... Please wait.';
-            messageEl.style.display = 'block';
-            
-            if (typeof Window.showGiga === 'function') {
-                Window.showGiga().then(() => {
-                    window.addEarnings('Gigapub');
-                }).catch(e => {
-                    messageEl.innerText = `Gigapub ad failed to load.`;
-                    console.error("Gigapub Ad Failed:", e);
-                });
-            } else {
-                messageEl.innerText = 'Gigapub SDK not loaded. Please check your internet connection.';
-            }
-        });
-
-        function handleEarningClick(source) {
-            alert(source + ' Earning section is opening.');
-        }
-
-        function handleWithdrawClick() {
-            const walletSection = document.getElementById('wallet-section');
-            const homeSection = document.getElementById('home-section');
-            
-            // Go to the wallet section
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.querySelector('[data-page="wallet"]').classList.add('active');
-            
-            walletSection.classList.add('active');
-            homeSection.classList.remove('active');
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const navItems = document.querySelectorAll('.nav-item');
-            
-            navItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    navItems.forEach(el => el.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    const pageName = this.getAttribute('data-page');
-                    const contentSections = document.querySelectorAll('.content-section');
-                    contentSections.forEach(section => {
-                        section.classList.remove('active');
-                    });
-                    document.getElementById(pageName + '-section').classList.add('active');
-                });
-            });
-            updateBalanceDisplay();
-        });
-    </script>
 </body>
 </html>
