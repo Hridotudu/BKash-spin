@@ -67,22 +67,17 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCoKBX6p2zsmWq47NXQvgArVXjB4Xu_63g",
-            authDomain: "hridoy-8d6c1.firebaseapp.com",
-            databaseURL: "https://hridoy-8d6c1-default-rtdb.firebaseio.com",
-            projectId: "hridoy-8d6c1",
-            storageBucket: "hridoy-8d6c1.firebasestorage.app",
-            messagingSenderId: "953393602911",
-            appId: "1:953393602911:web:6685a090899597a9d916ea",
-            measurementId: "G-KP6J8E6W80"
-        };
-        
+        // Firebase কনফিগারেশন এবং ইনিশিয়ালাইজেশন
+        const __app_id = "default-app-id";
+        const __firebase_config = '{"apiKey": "AIzaSyCoKBX6p2zsmWq47NXQvgArVXjB4Xu_63g", "authDomain": "hridoy-8d6c1.firebaseapp.com", "databaseURL": "https://hridoy-8d6c1-default-rtdb.firebaseio.com", "projectId": "hridoy-8d6c1", "storageBucket": "hridoy-8d6c1.firebasestorage.app", "messagingSenderId": "953393602911", "appId": "1:953393602911:web:6685a090899597a9d916ea", "measurementId": "G-KP6J8E6W80"}';
+        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         
+        // অ্যাড দেখে আয় করার জন্য প্রতি ক্লিকের আয়
+        const AD_EARNINGS_PER_CLICK = 0.05; // $0.05 প্রতি অ্যাডের জন্য
+
         // Custom Modal Functions
         function showModal(message) {
             const modal = document.getElementById('modal');
@@ -114,7 +109,7 @@
         async function loadUserData(userId) {
             const userDocRef = doc(db, "users", userId);
             
-            // Listen for real-time updates to user data
+            // রিয়েল-টাইম ডেটা আপডেটের জন্য listener
             onSnapshot(userDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const userData = docSnap.data();
@@ -139,12 +134,12 @@
                 showModal("Error loading user data.");
             });
 
-             // Load withdrawal methods from settings
+             // সেটিংস থেকে উইথড্রয়াল মেথড লোড করা
             onSnapshot(doc(db, "settings", "app_settings"), (docSnap) => {
                 if (docSnap.exists()) {
                     const settings = docSnap.data();
                     const withdrawalMethodsSelect = document.getElementById('withdrawal-methods-select');
-                    withdrawalMethodsSelect.innerHTML = ''; // Clear existing options
+                    withdrawalMethodsSelect.innerHTML = ''; // পুরোনো অপশনগুলো মুছে ফেলা
                     if (settings.withdrawalMethods && Array.isArray(settings.withdrawalMethods)) {
                         settings.withdrawalMethods.forEach(method => {
                             const option = document.createElement('option');
@@ -157,7 +152,7 @@
             });
         }
 
-        // Handle Registration
+        // রেজিস্ট্রেশন হ্যান্ডলার
         window.handleRegister = async function() {
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
@@ -174,7 +169,7 @@
             }
         }
         
-        // Handle Login
+        // লগইন হ্যান্ডলার
         window.handleLogin = async function() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -189,7 +184,7 @@
             }
         }
 
-        // Handle Logout
+        // লগআউট হ্যান্ডলার
         window.handleLogout = async function() {
             try {
                 await signOut(auth);
@@ -199,7 +194,7 @@
             }
         }
 
-        // Form switching
+        // ফর্ম পরিবর্তন
         window.showLoginForm = function() {
             document.getElementById('register-form').classList.add('hidden');
             document.getElementById('login-form').classList.remove('hidden');
@@ -210,7 +205,7 @@
             document.getElementById('register-form').classList.remove('hidden');
         }
 
-        // Withdrawal Request
+        // উইথড্রয়াল রিকোয়েস্ট
         window.submitWithdrawalRequest = async function() {
             const amount = parseFloat(document.getElementById('withdrawal-amount-input').value);
             const method = document.getElementById('withdrawal-methods-select').value;
@@ -235,7 +230,7 @@
             }
 
             try {
-                // Submit request to withdrawal_requests collection
+                // withdrawal_requests কালেকশনে রিকোয়েস্ট জমা দেওয়া
                 await setDoc(doc(db, "withdrawal_requests", crypto.randomUUID()), {
                     userId: auth.currentUser.uid,
                     amount: amount,
@@ -245,7 +240,7 @@
                     timestamp: new Date()
                 });
 
-                // Deduct balance from user document
+                // ইউজার ব্যালেন্স থেকে টাকা কমানো
                 await updateDoc(userDocRef, {
                     balance: userData.balance - amount
                 });
@@ -257,6 +252,57 @@
                 showModal("Error submitting request. Please try again.");
             }
         }
+
+        // অ্যাড দেখে আয় করার ফাংশন
+        window.handleWatchAd = async function() {
+            const watchAdBtn = document.getElementById('watch-ad-btn');
+            const userId = auth.currentUser?.uid;
+            
+            if (!userId) {
+                showModal("Please login to watch ads.");
+                return;
+            }
+
+            watchAdBtn.disabled = true;
+            const originalBtnText = watchAdBtn.innerHTML;
+            watchAdBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading Ad...';
+
+            // অ্যাড লোড হওয়ার সিমুলেশন (5 সেকেন্ড)
+            setTimeout(async () => {
+                try {
+                    const userDocRef = doc(db, "users", userId);
+                    const docSnap = await getDoc(userDocRef);
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        const currentBalance = userData.balance || 0;
+                        const currentAdsWatched = userData.adsWatched || 0;
+                        
+                        await updateDoc(userDocRef, {
+                            balance: currentBalance + AD_EARNINGS_PER_CLICK,
+                            adsWatched: currentAdsWatched + 1
+                        });
+                        showModal(`You earned $${AD_EARNINGS_PER_CLICK} for watching the ad!`);
+                    } else {
+                        showModal("User data not found. Please try again.");
+                    }
+                } catch (error) {
+                    console.error("Error updating balance:", error);
+                    showModal("Failed to earn money. Please try again.");
+                } finally {
+                    watchAdBtn.disabled = false;
+                    watchAdBtn.innerHTML = originalBtnText;
+                }
+            }, 5000); // 5 সেকেন্ড পর কাজ করবে
+        }
+
+        // অ্যাড বাটন এ ইভেন্ট লিসেনার যোগ করা
+        document.addEventListener('DOMContentLoaded', () => {
+            const watchAdBtn = document.getElementById('watch-ad-btn');
+            if (watchAdBtn) {
+                watchAdBtn.addEventListener('click', window.handleWatchAd);
+            }
+        });
+
     </script>
 
     <!-- Authentication Section -->
