@@ -6,9 +6,6 @@
     <title>Swap4Cash.online</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
-    <script src='//libtl.com/sdk.js' data-zone='9572158' data-sdk='show_9572158'></script>
-    <script src="https://ad.gigapub.tech/script?id=919"></script>
-
     <style>
         /* CSS for a clean, dark-themed UI */
         body {
@@ -476,7 +473,7 @@
             messageEl.style.display = 'block';
             console.log('Earned $' + adEarningRate + '. Current balance: $' + currentBalance.toFixed(2));
         }
-
+        
         // --- New Authentication Functions ---
 
         function showLoginForm() {
@@ -541,45 +538,34 @@
 
         // --- Existing Functions, Modified for the new structure ---
         
-        // Event listener for the MoniTag button
-        document.getElementById('moniTagButton').addEventListener('click', function() {
+        // Function to simulate a successful ad view after a delay
+        function simulateAdView(adSource) {
             const messageEl = document.getElementById('ad-status-message');
             messageEl.innerText = 'Ad loading... Please wait.';
             messageEl.style.display = 'block';
 
-            if (typeof show_9572158 === 'function') {
-                show_9572158();
-                setTimeout(function() {
-                    addEarnings('MoniTag');
-                }, 3000);
-            } else {
-                messageEl.innerText = 'MoniTag ad failed to load. Please check your internet connection.';
-            }
+            // Simulate ad-watching time with a delay
+            setTimeout(() => {
+                addEarnings(adSource);
+            }, 3000); // 3-second delay
+        }
+
+        // Event listener for the MoniTag button
+        document.getElementById('moniTagButton').addEventListener('click', function() {
+            simulateAdView('MoniTag');
         });
 
         // Event listener for the Gigapub button
         document.getElementById('gigapubButton').addEventListener('click', function() {
-            const messageEl = document.getElementById('ad-status-message');
-            messageEl.innerText = 'Ad loading... Please wait.';
-            messageEl.style.display = 'block';
-            
-            if (typeof Window.showGiga === 'function') {
-                Window.showGiga().then(() => {
-                    addEarnings('Gigapub');
-                }).catch(e => {
-                    messageEl.innerText = `Gigapub ad failed to load.`;
-                    console.error("Gigapub Ad Failed:", e);
-                });
-            } else {
-                messageEl.innerText = 'Gigapub SDK not loaded. Please check your internet connection.';
-            }
+            simulateAdView('Gigapub');
         });
 
         function handleEarningClick(source) {
-            alert(source + ' Earning section is opening.');
+            simulateAdView(source);
         }
 
         function handleWithdrawClick() {
+            // No changes needed here, as it's a simple alert
             alert('Your withdrawal request has been submitted successfully!');
         }
 
